@@ -1,0 +1,64 @@
+# Python-specific
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environments
+venv/
+env/
+.venv/
+ENV/
+
+# Streamlit
+.streamlit/
+.cache/
+uploaded_files/
+tmp/
+*.tmp
+
+# Ollama
+ollama_models/
+*.gguf  # if you manually download GGUF files
+
+# Logs and temp files
+*.log
+*.tmp
+*.bak
+*.swp
+*~
+
+# OS-specific
+.DS_Store
+Thumbs.db
+ehthumbs.db
+
+# Editor/IDE files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Dependency management
+Pipfile.lock
+poetry.lock
+requirements.txt.bak
+
+# Reports & temp outputs from app
+/tmp/
+/fact_check_report.*
+verification.json
+extracted_claims.json
+claims.json
+
+# Misc
+*.bak
+*.old
+*.backup
