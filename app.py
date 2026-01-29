@@ -282,18 +282,27 @@ def main():
         
         # Summary metrics
         st.header("📊 Results Summary")
-        
-        # Quality grade 
+
+        # Quality grade
         quality = report_data.get('document_quality', 'UNKNOWN - Report incomplete')
-        if 'EXCELLENT' in quality:
-            st.success(f"### {quality}")
-        elif 'GOOD' in quality:
-            st.info(f"### {quality}")
-        elif 'FAIR' in quality:
-            st.warning(f"### {quality}")
+
+        if 'EXCELLENT' in quality.upper():
+            st.success(f"### Document Quality: {quality}")
+        elif 'GOOD' in quality.upper():
+            st.info(f"### Document Quality: {quality}")
+        elif 'FAIR' in quality.upper():
+            st.warning(f"### Document Quality: {quality}")
+        elif 'POOR' in quality.upper():
+            st.error(f"### Document Quality: {quality}")
         else:
-            st.error(f"### {quality}")
-            st.warning("Verification didn't produce any results. Check Ollama is running and model is pulled.")
+            # Only show the Ollama warning when truly no results came back
+            if report_data.get('total_claims', 0) == 0:
+                st.error(f"### {quality}")
+                st.warning("Verification didn't produce any results. Check Ollama is running and model is pulled.")
+            else:
+                # Results exist → just show quality without scary warning
+                st.error(f"### Document Quality: {quality}")
+                st.caption("(Some claims may need review due to low confidence or unverifiable status)")
         
         # Metrics row
         col1, col2, col3, col4 = st.columns(4)
@@ -407,7 +416,7 @@ def main():
         st.markdown("---")
         st.header("💾 Download Reports")
         
-        col1, col2, col3 = st.columns(3)
+        col1, col2 = st.columns(2)
         
         with col1:
             # Generate text report
@@ -434,20 +443,6 @@ def main():
                 json_content,
                 file_name="fact_check_report.json",
                 mime="application/json",
-                use_container_width=True
-            )
-        
-        with col3:
-            # Generate HTML report
-            html_report = reporter.generate_html_report("/tmp/report.html")
-            with open("/tmp/report.html", "r", encoding="utf-8", errors="replace") as f:
-                html_content = f.read()
-
-            st.download_button(
-                "🌐 Download HTML Report",
-                html_content,
-                file_name="fact_check_report.html",
-                mime="text/html",
                 use_container_width=True
             )
         
