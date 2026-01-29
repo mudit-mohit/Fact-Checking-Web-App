@@ -8,13 +8,13 @@ from langchain.prompts import PromptTemplate
 from langchain.output_parsers import PydanticOutputParser
 from pydantic import BaseModel, Field
 
+
+# ───── HARD CODED KEYS (LOCAL & DEPLOYED) ─────
 MISTRAL_API_KEY = "qnLfDsXWYCQiQTxLkGjLu6pkz50OQGir"
-TAVILY_API_KEY = "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"
+# ───────────────────────────────────────────────
 
 
-# Pydantic models for structured output
 class ExtractedClaim(BaseModel):
-    """Structured claim extracted from document"""
     claim_text: str = Field(description="The actual claim or statement")
     claim_type: str = Field(description="Type: statistic, date, financial, or technical_spec")
     context: str = Field(description="Surrounding context from the document")
@@ -22,13 +22,11 @@ class ExtractedClaim(BaseModel):
 
 
 class ClaimExtractionResult(BaseModel):
-    """Result of claim extraction from a document chunk"""
-    claims: List[ExtractedClaim] = Field(description="List of extracted claims")
+    claims: List[ExtractedClaim]
 
 
 @dataclass
 class Claim:
-    """Represents an extracted claim from the document"""
     claim_type: str
     text: str
     context: str
@@ -37,27 +35,21 @@ class Claim:
 
 
 class LangChainClaimExtractor:
-    """Extract verifiable claims from PDFs using LangChain + local Ollama"""
-    
     def __init__(self, pdf_path: str):
         self.pdf_path = pdf_path
         self.claims: List[Claim] = []
-        
+
         self.llm = ChatMistralAI(
             model="mistral-small-latest",
             api_key=MISTRAL_API_KEY,
             temperature=0.0,
             max_tokens=2048
         )
-        
-        # Text splitter for chunking documents
+
         self.text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=2000,
-            chunk_overlap=200,
-            separators=["\n\n", "\n", ".", "!", "?", ",", " ", ""]
+            chunk_size=2000, chunk_overlap=200
         )
-        
-        # Output parser for structured extraction
+
         self.parser = PydanticOutputParser(pydantic_object=ClaimExtractionResult)
         
         # Create extraction prompt
