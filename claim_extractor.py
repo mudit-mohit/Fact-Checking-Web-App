@@ -1,6 +1,5 @@
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 from dataclasses import dataclass, asdict
-import os
 import json
 from langchain_community.document_loaders import PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -35,23 +34,17 @@ class Claim:
 
 
 class LangChainClaimExtractor:
-    """Extract verifiable claims from PDFs using LangChain"""
+    """Extract verifiable claims from PDFs using LangChain + local Ollama"""
     
-    def __init__(self, pdf_path: str, api_key: Optional[str] = None):
+    def __init__(self, pdf_path: str):
         self.pdf_path = pdf_path
         self.claims: List[Claim] = []
         
-        # Store the api_key properly
-        self.api_key = api_key or os.environ.get("GROQ_API_KEY")
-        
-        if not self.api_key:
-            raise ValueError("No Groq API key provided. Set it via parameter or GROQ_API_KEY environment variable.")
-        
-        # Now use it safely
+        # Local Ollama LLM 
         self.llm = ChatOllama(
             model="mistral:latest",           
             temperature=0.0,
-            format="json"                  
+            format="json"                     
         )
         
         # Text splitter for chunking documents
@@ -202,7 +195,7 @@ Extract all verifiable claims from the text above.""",
         unique_claims = self.deduplicate_claims()
         
         print(f"\n{'='*60}")
-        print("CLAIM EXTRACTION SUMMARY (LangChain)")
+        print("CLAIM EXTRACTION SUMMARY (LangChain + Ollama)")
         print(f"{'='*60}\n")
         print(f"Total Claims Extracted: {len(unique_claims)}\n")
         
@@ -226,28 +219,21 @@ Extract all verifiable claims from the text above.""",
                     print(f"    Page: {claim.page_number}\n")
 
 
-# Main execution
+# Main execution 
 if __name__ == "__main__":
     import sys
-    import os
     
     if len(sys.argv) < 2:
-        print("Usage: python claim_extractor_langchain.py <path_to_pdf> [output_json]")
-        print("\nExample: python claim_extractor_langchain.py document.pdf claims.json")
+        print("Usage: python claim_extractor.py <path_to_pdf> [output_json]")
+        print("\nExample: python claim_extractor.py document.pdf claims.json")
         sys.exit(1)
     
     pdf_path = sys.argv[1]
     output_path = sys.argv[2] if len(sys.argv) > 2 else "extracted_claims.json"
     
-    # Get API key
-    api_key = os.environ.get('ANTHROPIC_API_KEY')
-    if not api_key:
-        print("ERROR: ANTHROPIC_API_KEY environment variable not set")
-        sys.exit(1)
-    
     print(f"Extracting claims from: {pdf_path}")
     
-    extractor = LangChainClaimExtractor(pdf_path, api_key=api_key)
+    extractor = LangChainClaimExtractor(pdf_path)  
     claims = extractor.extract_all_claims()
     
     # Print summary
