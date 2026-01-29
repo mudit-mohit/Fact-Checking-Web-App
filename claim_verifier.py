@@ -42,7 +42,6 @@ class EnhancedClaimVerifier:
         self.verification_results = []
         
         self.preferred_provider = search_provider
-        self.search.print_status()
     
     def load_claims(self, json_path: str) -> List[Dict[str, Any]]:
         """Load extracted claims from JSON file"""
