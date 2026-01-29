@@ -150,13 +150,16 @@ def process_pdf(uploaded_file, max_claims=None):
             # Verify with progress updates
             total = len(claims_list) if not max_claims else min(max_claims, len(claims_list))
             
-            for idx in range(total):
-                verifier.verify_all_claims(claims_list, delay=1.5, max_claims=idx+1)
-                progress = 35 + int((idx + 1) / total * 30)
-                progress_bar.progress(progress)
+            verification_results = verifier.verify_all_claims(
+                claims_list,
+                delay=1.5,
+                max_claims=max_claims
+            )
             
-            verifier.export_results(verification_file)
+            verifier.verification_results
             
+            progress_bar.progress(35)
+            verification_results = verifier.verify_all_claims(claims_list, delay=1.5, max_claims=max_claims)
             progress_bar.progress(66)
             st.success(f"✓ Verified {total} claims")
             

@@ -29,19 +29,20 @@ class EnhancedClaimVerifier:
     """Verify claims using local Ollama LLM + Tavily search"""
     
     def __init__(self, search_provider: Optional[str] = None):
-        # Local Ollama LLM
-        def __init__(self, search_provider: Optional[str] = None):
-            self.llm = ChatMistralAI(
-                model="mistral-small-latest",
-                api_key=MISTRAL_API_KEY,
-                temperature=0.0,
-                max_tokens=2048
-            )
-            
-            self.search = TavilySearch(api_key=TAVILY_API_KEY)
-            self.preferred_provider = search_provider
-            self.verification_results = []
-            self.search.print_status()
+        self.llm = ChatMistralAI(
+            model="mistral-small-latest",
+            api_key=MISTRAL_API_KEY,
+            temperature=0.0,
+            max_tokens=2048
+        )
+        
+        self.search = TavilySearch(api_key=TAVILY_API_KEY)
+        
+        
+        self.verification_results = []
+        
+        self.preferred_provider = search_provider
+        self.search.print_status()
     
     def load_claims(self, json_path: str) -> List[Dict[str, Any]]:
         """Load extracted claims from JSON file"""
