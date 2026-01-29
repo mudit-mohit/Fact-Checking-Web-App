@@ -1,16 +1,16 @@
 streamlit>=1.29.0
 pypdf>=4.0.0
 
-# Modern LangChain (required for langchain-mistralai)
-langchain==0.3.3
-langchain-core==0.3.3
-langchain-community==0.3.2
-langchain-text-splitters==0.3.0
+# LangChain family - loosened to avoid exact version conflict
+langchain>=0.3.0
+langchain-core>=0.3.10
+langchain-community>=0.3.0
+langchain-text-splitters>=0.3.0
 
-# Mistral integration (now compatible)
+# Mistral integration (requires core >=0.3)
 langchain-mistralai>=0.2.0
 
-# Tavily search
+# Tavily
 tavily-python>=0.3.0
 
 # Utilities
