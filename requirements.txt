@@ -1,18 +1,9 @@
-# Core app & UI
 streamlit>=1.29.0
-
-# PDF handling
 pypdf>=4.0.0
-
-# LangChain & Ollama integration
-langchain>=0.2.16
-langchain-core>=0.2.38
-langchain-community>=0.2.16
+langchain==0.2.16
+langchain-core==0.2.38
+langchain-community==0.2.16
 langchain-ollama>=0.1.0
-
-# Tavily search 
 tavily-python>=0.3.0
-
-# General utilities
 requests>=2.31.0
 pydantic>=2.5.0

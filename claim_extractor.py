@@ -3,7 +3,7 @@ from dataclasses import dataclass, asdict
 import os
 import json
 from langchain_community.document_loaders import PyPDFLoader
-from langchain_core.text_splitter import RecursiveCharacterTextSplitter
+from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_ollama import ChatOllama
 from langchain.prompts import PromptTemplate
 from langchain.output_parsers import PydanticOutputParser
