@@ -40,7 +40,7 @@ class EnhancedClaimVerifier:
             
             self.search = TavilySearch(api_key=TAVILY_API_KEY)
             self.preferred_provider = search_provider
-            
+            self.verification_results = []
             self.search.print_status()
     
     def load_claims(self, json_path: str) -> List[Dict[str, Any]]:
