@@ -1,10 +1,9 @@
-from langchain_ollama import ChatOllama
 import json
 import time
 from typing import List, Dict, Any, Optional
 from dataclasses import dataclass, asdict
 from datetime import datetime
-import os
+from langchain_ollama import ChatOllama
 from search_providers import TavilySearch, SearchResult, format_results_for_llm
 
 
@@ -25,21 +24,19 @@ class VerificationResult:
 
 
 class EnhancedClaimVerifier:
-    def __init__(self, api_key: Optional[str] = None, search_provider: Optional[str] = None):
-        self.api_key = api_key or os.environ.get('GROQ_API_KEY')
-        if not self.api_key:
-            raise ValueError("GROQ_API_KEY must be set")
-        
-        # Use Groq
+    """Verify claims using local Ollama LLM + Tavily search"""
+    
+    def __init__(self, search_provider: Optional[str] = None):
+        # Local Ollama LLM
         self.llm = ChatOllama(
             model="mistral:latest",           
             temperature=0.0,
-            format="json"                 
+            format="json"                     
         )
-
-        self.search = TavilySearch()
+        
+        self.search = TavilySearch()  
         self.preferred_provider = search_provider
-        self.verification_results = []
+        self.verification_results: List[VerificationResult] = []
         
         self.search.print_status()
     
@@ -83,11 +80,7 @@ class EnhancedClaimVerifier:
         
         for query in queries:
             print(f"    Query: {query}")
-            results = self.search.search(
-                query, 
-                max_results=3,
-                preferred_provider=self.preferred_provider
-            )
+            results = self.search.search(query, max_results=3)
             
             if results:
                 all_results.extend(results)
@@ -108,6 +101,8 @@ class EnhancedClaimVerifier:
         return unique_results[:5], used_queries
     
     def verify_with_llm(self, claim: Dict[str, Any], search_results: List[SearchResult]) -> Dict[str, Any]:
+        """Use local Ollama to analyze search results and verify claim"""
+        
         claim_text = claim['text']
         claim_type = claim['claim_type']
         claim_context = claim['context']
@@ -148,12 +143,10 @@ Provide your analysis in this JSON format:
 Be objective and thorough. Prioritize recent, authoritative sources."""
 
         try:
-            # Use Gemini instead of Anthropic
             response = self.llm.invoke(prompt)
-            response_text = response.content  
+            response_text = response.content
             
-            # Parse JSON 
-            import json
+            # Parse JSON from response
             import re
             json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
             if json_match:
@@ -224,7 +217,7 @@ Be objective and thorough. Prioritize recent, authoritative sources."""
         total = len(claims_to_verify)
         
         print(f"\n{'='*60}")
-        print(f"VERIFYING {total} CLAIMS (Enhanced Search)")
+        print(f"VERIFYING {total} CLAIMS (Local Ollama + Tavily)")
         print(f"{'='*60}\n")
         
         for idx, claim in enumerate(claims_to_verify, 1):
@@ -240,7 +233,6 @@ Be objective and thorough. Prioritize recent, authoritative sources."""
             
             except Exception as e:
                 print(f"  Error: {str(e)}\n")
-                # Create error result
                 result = VerificationResult(
                     claim_text=claim['text'],
                     claim_type=claim['claim_type'],
@@ -256,7 +248,7 @@ Be objective and thorough. Prioritize recent, authoritative sources."""
                 )
                 self.verification_results.append(result)
             
-            # Rate limiting
+            # Small delay to avoid overwhelming local Ollama
             if idx < total:
                 time.sleep(delay)
         
@@ -284,7 +276,6 @@ Be objective and thorough. Prioritize recent, authoritative sources."""
             status = result.verification_status
             status_counts[status] = status_counts.get(status, 0) + 1
             
-            # Track provider usage
             provider = result.search_provider_used
             provider_usage[provider] = provider_usage.get(provider, 0) + 1
             
@@ -300,8 +291,8 @@ Be objective and thorough. Prioritize recent, authoritative sources."""
                     'analysis': result.analysis[:200] + '...'
                 })
         
-        verification_rate = (status_counts['verified'] / total_claims * 100)
-        accuracy_score = ((status_counts['verified'] + status_counts['partial'] * 0.5) / total_claims * 100)
+        verification_rate = (status_counts['verified'] / total_claims * 100) if total_claims > 0 else 0
+        accuracy_score = ((status_counts['verified'] + status_counts['partial'] * 0.5) / total_claims * 100) if total_claims > 0 else 0
         
         return {
             'summary': {
@@ -345,7 +336,7 @@ Be objective and thorough. Prioritize recent, authoritative sources."""
         summary = report['summary']
         
         print(f"\n{'='*60}")
-        print("FACT-CHECK VERIFICATION REPORT (Enhanced Search)")
+        print("FACT-CHECK VERIFICATION REPORT (Local Ollama + Tavily)")
         print(f"{'='*60}\n")
         
         print(f"Total Claims Checked: {summary['total_claims_checked']}")
@@ -371,24 +362,19 @@ if __name__ == "__main__":
     import sys
     
     if len(sys.argv) < 2:
-        print("Usage: python claim_verifier_enhanced.py <claims_json> [output_json] [--max-claims N] [--provider PROVIDER]")
-        print("\nProviders: tavily, serpapi, google")
-        print("\nExample: python claim_verifier_enhanced.py claims.json --provider tavily")
+        print("Usage: python claim_verifier.py <claims_json> [output_json] [--max-claims N]")
+        print("\nExample: python claim_verifier.py claims.json results.json --max-claims 5")
         sys.exit(1)
     
     claims_file = sys.argv[1]
     output_file = "verification_results.json"
     max_claims = None
-    provider = None
     
     # Parse arguments
     i = 2
     while i < len(sys.argv):
         if sys.argv[i] == "--max-claims" and i + 1 < len(sys.argv):
             max_claims = int(sys.argv[i + 1])
-            i += 2
-        elif sys.argv[i] == "--provider" and i + 1 < len(sys.argv):
-            provider = sys.argv[i + 1]
             i += 2
         elif not sys.argv[i].startswith("--"):
             output_file = sys.argv[i]
@@ -397,7 +383,7 @@ if __name__ == "__main__":
             i += 1
     
     try:
-        verifier = EnhancedClaimVerifier(search_provider=provider)
+        verifier = EnhancedClaimVerifier()
         claims = verifier.load_claims(claims_file)
         
         if max_claims:
