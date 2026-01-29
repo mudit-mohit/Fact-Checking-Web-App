@@ -2,6 +2,7 @@ import streamlit as st
 import os
 import json
 import tempfile
+import shutil  # ← new import for copying files
 from claim_extractor import LangChainClaimExtractor
 from claim_verifier import EnhancedClaimVerifier
 from report_generator import FactCheckReporter
@@ -15,7 +16,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for better styling
+# Custom CSS (unchanged)
 st.markdown("""
 <style>
     .main-header { font-size: 3rem; font-weight: bold; text-align: center; margin-bottom: 0.5rem; }
@@ -54,31 +55,15 @@ def display_metric(label, value, color_class=""):
     </div>
     """, unsafe_allow_html=True)
 
-def display_claim_card(claim, verdict_info):
-    card_class = f"claim-card-{claim.get('verdict', 'unknown')}"
-    icon = verdict_info['icon']
-    
-    st.markdown(f"""
-    <div class="claim-card {card_class}">
-        <h4>{icon} {claim.get('claim_text', 'N/A')}</h4>
-        <p><strong>Type:</strong> {claim.get('claim_type', 'N/A')} | <strong>Page:</strong> {claim.get('page_number', 'N/A')}</p>
-        <p><em>"{claim.get('context', '')[:150]}..."</em></p>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    confidence = claim.get('confidence_score', 0)
-    confidence_pct = int(confidence * 100)
-    st.progress(confidence, text=f"Confidence: {confidence_pct}%")
-    
-    with st.expander("📊 Details"):
-        st.write("**Explanation:**", claim.get('analysis', 'No explanation available')[:300] + "...")
-        
 def process_pdf(uploaded_file, max_claims=None):
+    # Persistent location for verification file (outside temp dir)
+    verification_file = "verification_results.json"  # saved in current working directory
+
     with tempfile.TemporaryDirectory() as tmp_dir:
         pdf_path = os.path.join(tmp_dir, uploaded_file.name)
         claims_file = os.path.join(tmp_dir, 'claims.json')
-        verification_file = os.path.join(tmp_dir, 'verification.json')
-        
+        tmp_verification = os.path.join(tmp_dir, 'tmp_verification.json')  # temp location inside temp dir
+
         try:
             # Save uploaded PDF
             with open(pdf_path, 'wb') as f:
@@ -101,19 +86,26 @@ def process_pdf(uploaded_file, max_claims=None):
             verifier = EnhancedClaimVerifier()
             claims_list = verifier.load_claims(claims_file)
             
-            # Run verification **once**
+            # Run verification once
             verification_results = verifier.verify_all_claims(
                 claims_list,
                 delay=1.5,
                 max_claims=max_claims
             )
             
-            # Export to file
-            verifier.export_results(verification_file)
+            # Export to temporary file first
+            verifier.export_results(tmp_verification)
             
-            # Safety check
+            # Copy to persistent location before temp dir disappears
+            if os.path.exists(tmp_verification):
+                shutil.copy(tmp_verification, verification_file)
+            else:
+                st.error("Verification export failed – no file created inside temp dir.")
+                return None, None, None, None
+            
+            # Final safety check
             if not os.path.exists(verification_file):
-                st.error("Verification file was not created. Something went wrong during export.")
+                st.error(f"Could not save verification file to {verification_file}")
                 return None, None, None, None
             
             num_verified = len(verification_results)
@@ -182,7 +174,7 @@ def main():
             if st.button("🚀 Start Fact-Checking", type="primary", use_container_width=True):
                 with st.spinner("Processing document..."):
                     result = process_pdf(uploaded_file, max_claims)
-                    if result[0] is not None:
+                    if result and result[0] is not None:
                         claims_data, verification_data, report_data, reporter = result
                         st.session_state.claims_data = claims_data
                         st.session_state.verification_data = verification_data
@@ -198,7 +190,6 @@ def main():
         
         st.header("📊 Results Summary")
         
-        # Quality grade
         quality = report_data.get('document_quality', 'UNKNOWN')
         if 'EXCELLENT' in quality.upper():
             st.success(f"### Document Quality: {quality}")
@@ -209,7 +200,6 @@ def main():
         else:
             st.error(f"### Document Quality: {quality}")
         
-        # Metrics
         col1, col2, col3, col4 = st.columns(4)
         with col1: display_metric("Total Claims", report_data.get('total_claims', 0))
         with col2: display_metric("Accuracy Rate", f"{report_data.get('accuracy_rate', 0)}%", "verified")
@@ -218,11 +208,8 @@ def main():
         
         st.markdown("---")
         st.header("🔍 Detailed Claims")
-        
-        # You can expand this part later with real claim cards
         st.info("Detailed claim display coming soon – currently showing summary only.")
         
-        # Download buttons (using /tmp as fallback)
         st.markdown("---")
         st.header("💾 Download Reports")
         
@@ -241,6 +228,9 @@ def main():
             for key in ['processed', 'claims_data', 'verification_data', 'report_data', 'reporter']:
                 if key in st.session_state:
                     del st.session_state[key]
+            # Optional: delete verification_results.json if you want clean start
+            if os.path.exists("verification_results.json"):
+                os.remove("verification_results.json")
             st.rerun()
 
 if __name__ == "__main__":
