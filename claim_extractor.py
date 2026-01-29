@@ -3,10 +3,13 @@ from dataclasses import dataclass, asdict
 import json
 from langchain_community.document_loaders import PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_ollama import ChatOllama
+from langchain_mistralai import ChatMistralAI
 from langchain.prompts import PromptTemplate
 from langchain.output_parsers import PydanticOutputParser
 from pydantic import BaseModel, Field
+
+MISTRAL_API_KEY = "qnLfDsXWYCQiQTxLkGjLu6pkz50OQGir"
+TAVILY_API_KEY = "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"
 
 
 # Pydantic models for structured output
@@ -40,11 +43,11 @@ class LangChainClaimExtractor:
         self.pdf_path = pdf_path
         self.claims: List[Claim] = []
         
-        # Local Ollama LLM 
-        self.llm = ChatOllama(
-            model="mistral:latest",           
+        self.llm = ChatMistralAI(
+            model="mistral-small-latest",
+            api_key=MISTRAL_API_KEY,
             temperature=0.0,
-            format="json"                     
+            max_tokens=2048
         )
         
         # Text splitter for chunking documents

@@ -5,6 +5,7 @@ import tempfile
 from claim_extractor import LangChainClaimExtractor
 from claim_verifier import EnhancedClaimVerifier
 from report_generator import FactCheckReporter
+from claim_verifier import VerificationResult
 
 # Page configuration
 st.set_page_config(

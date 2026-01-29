@@ -3,9 +3,11 @@ import time
 from typing import List, Dict, Any, Optional
 from dataclasses import dataclass, asdict
 from datetime import datetime
-from langchain_ollama import ChatOllama
+from langchain_mistralai import ChatMistralAI
 from search_providers import TavilySearch, SearchResult, format_results_for_llm
 
+MISTRAL_API_KEY = "qnLfDsXWYCQiQTxLkGjLu6pkz50OQGir"
+TAVILY_API_KEY = "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"
 
 @dataclass
 class VerificationResult:
@@ -28,17 +30,18 @@ class EnhancedClaimVerifier:
     
     def __init__(self, search_provider: Optional[str] = None):
         # Local Ollama LLM
-        self.llm = ChatOllama(
-            model="mistral:latest",           
-            temperature=0.0,
-            format="json"                     
-        )
-        
-        self.search = TavilySearch()  
-        self.preferred_provider = search_provider
-        self.verification_results: List[VerificationResult] = []
-        
-        self.search.print_status()
+        def __init__(self, search_provider: Optional[str] = None):
+            self.llm = ChatMistralAI(
+                model="mistral-small-latest",
+                api_key=MISTRAL_API_KEY,
+                temperature=0.0,
+                max_tokens=2048
+            )
+            
+            self.search = TavilySearch(api_key=TAVILY_API_KEY)
+            self.preferred_provider = search_provider
+            
+            self.search.print_status()
     
     def load_claims(self, json_path: str) -> List[Dict[str, Any]]:
         """Load extracted claims from JSON file"""

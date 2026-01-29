@@ -22,7 +22,6 @@ class ReportClaim:
 
 class FactCheckReporter:
     """Generate comprehensive fact-check reports"""
-    
     VERDICT_MAPPING = {
         'verified': {
             'label': 'Verified',
